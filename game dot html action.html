@@ -1,144 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dodge the Enemies!</title>
+  <meta charset="UTF-8">
+  <title>Tebak Sel Excel!</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      margin: 0;
-      background: #111;
-      color: white;
-      font-family: sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f3faff;
       text-align: center;
-    }
-
-    canvas {
-      background: #222;
-      display: block;
-      margin: 20px auto;
-      border: 2px solid #555;
+      padding: 30px;
     }
 
     h1 {
-      margin-top: 20px;
-      color: #00d4ff;
+      color: #2f74c0;
     }
 
-    #score {
+    table {
+      border-collapse: collapse;
+      margin: 20px auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    td {
+      width: 60px;
+      height: 40px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      background-color: #ffffff;
+      transition: background-color 0.2s;
+    }
+
+    td:hover {
+      background-color: #d0ecff;
+    }
+
+    td.clicked {
+      background-color: #fce4ec;
+    }
+
+    td.correct {
+      background-color: #c8e6c9;
+    }
+
+    #status {
+      margin-top: 20px;
       font-size: 18px;
+      font-weight: bold;
+    }
+
+    #resetBtn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #resetBtn:hover {
+      background-color: #1976d2;
     }
   </style>
 </head>
 <body>
 
-<h1>Dodge the Enemies!</h1>
-<div id="score">Score: 0</div>
-<canvas id="gameCanvas" width="400" height="600"></canvas>
+<h1>Tebak Sel Excel!</h1>
+<p>Cari sel yang berisi angka <strong id="targetNum"></strong></p>
+
+<table id="excelBoard"></table>
+
+<div id="status"></div>
+<button id="resetBtn">Main Lagi</button>
 
 <script>
-  const canvas = document.getElementById("gameCanvas");
-  const ctx = canvas.getContext("2d");
+  const rows = 6;
+  const cols = 6;
+  const board = document.getElementById("excelBoard");
+  const targetDisplay = document.getElementById("targetNum");
+  const status = document.getElementById("status");
 
-  const player = {
-    x: 180,
-    y: 550,
-    width: 40,
-    height: 40,
-    color: "#00bfff",
-    speed: 5,
-  };
+  let targetRow, targetCol, targetNumber;
 
-  const enemies = [];
-  const enemyWidth = 40;
-  const enemyHeight = 40;
-  let score = 0;
-  let gameOver = false;
+  function initGame() {
+    board.innerHTML = "";
+    status.textContent = "";
+    const maxValue = 99;
 
-  function drawPlayer() {
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-  }
+    // Randomize target cell
+    targetRow = Math.floor(Math.random() * rows);
+    targetCol = Math.floor(Math.random() * cols);
+    targetNumber = Math.floor(Math.random() * maxValue) + 1;
+    targetDisplay.textContent = targetNumber;
 
-  function drawEnemies() {
-    enemies.forEach((enemy) => {
-      ctx.fillStyle = "red";
-      ctx.fillRect(enemy.x, enemy.y, enemyWidth, enemyHeight);
-    });
-  }
+    for (let i = 0; i < rows; i++) {
+      const tr = document.createElement("tr");
+      for (let j = 0; j < cols; j++) {
+        const td = document.createElement("td");
 
-  function updateEnemies() {
-    enemies.forEach((enemy) => {
-      enemy.y += 3;
+        let value;
+        if (i === targetRow && j === targetCol) {
+          value = targetNumber;
+        } else {
+          value = Math.floor(Math.random() * maxValue) + 1;
+        }
 
-      // Cek tabrakan
-      if (
-        enemy.x < player.x + player.width &&
-        enemy.x + enemyWidth > player.x &&
-        enemy.y < player.y + player.height &&
-        enemy.y + enemyHeight > player.y
-      ) {
-        gameOver = true;
+        td.dataset.value = value;
+        td.addEventListener("click", () => handleClick(td, i, j));
+        tr.appendChild(td);
       }
-    });
-
-    // Hapus musuh yang keluar layar
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      if (enemies[i].y > canvas.height) {
-        enemies.splice(i, 1);
-        score++;
-        document.getElementById("score").textContent = `Score: ${score}`;
-      }
+      board.appendChild(tr);
     }
   }
 
-  function spawnEnemy() {
-    const x = Math.floor(Math.random() * (canvas.width - enemyWidth));
-    enemies.push({ x: x, y: -enemyHeight });
-  }
+  function handleClick(cell, row, col) {
+    if (cell.classList.contains("clicked") || cell.classList.contains("correct")) return;
 
-  let keys = {};
-  window.addEventListener("keydown", (e) => {
-    keys[e.key] = true;
-  });
-  window.addEventListener("keyup", (e) => {
-    keys[e.key] = false;
-  });
+    const value = parseInt(cell.dataset.value);
+    cell.textContent = value;
+    cell.classList.add("clicked");
 
-  function updatePlayer() {
-    if (keys["ArrowLeft"] && player.x > 0) {
-      player.x -= player.speed;
-    }
-    if (keys["ArrowRight"] && player.x + player.width < canvas.width) {
-      player.x += player.speed;
+    if (value === targetNumber) {
+      cell.classList.remove("clicked");
+      cell.classList.add("correct");
+      status.textContent = "🎉 Selamat! Kamu menemukannya!";
+    } else {
+      status.textContent = "😕 Bukan yang ini, coba lagi!";
     }
   }
 
-  function gameLoop() {
-    if (gameOver) {
-      ctx.fillStyle = "white";
-      ctx.font = "30px sans-serif";
-      ctx.fillText("Game Over!", 120, 300);
-      ctx.font = "20px sans-serif";
-      ctx.fillText(`Score: ${score}`, 160, 340);
-      return;
-    }
+  document.getElementById("resetBtn").addEventListener("click", initGame);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updatePlayer();
-    updateEnemies();
-    drawPlayer();
-    drawEnemies();
-
-    requestAnimationFrame(gameLoop);
-  }
-
-  // Start game
-  setInterval(spawnEnemy, 1000);
-  gameLoop();
+  initGame();
 </script>
 
 </body>
